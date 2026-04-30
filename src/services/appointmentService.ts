@@ -174,7 +174,8 @@ export const appointmentService = {
       FROM appointments a
       LEFT JOIN patients p ON a.patient_id = p.id
       LEFT JOIN locations l ON a.location_id = l.id
-      WHERE a.is_active = 1 AND a.appointment_datetime BETWEEN ? AND ?
+      WHERE a.is_active = 1 
+      AND replace(a.appointment_datetime, 'T', ' ') BETWEEN ? AND ?
       ORDER BY a.appointment_datetime ASC;
     `;
     const result = await db.query(sql, [startDate, endDate]);

@@ -2,12 +2,15 @@ import { useState, useEffect } from 'react';
 import { patientService } from '../services/patientService';
 import { locationService } from '../services/locationService';
 import type { Patient, Location } from '../types.ts';
+import { useNavigate } from 'react-router-dom';
 
 export const PatientsManager = () => {
+  const navigate = useNavigate();
+
   const [patients, setPatients] = useState<Patient[]>([]);
   const [locations, setLocations] = useState<Location[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Estado del Modal y Formulario
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -122,6 +125,10 @@ export const PatientsManager = () => {
     }
   };
 
+  const openDetailsPacient = (patientId: number) => {
+    navigate(`/patient/${patientId}`);
+  };
+
   return (
     <div className="max-w-6xl mx-auto space-y-6">
       {/* Cabecera */}
@@ -130,7 +137,7 @@ export const PatientsManager = () => {
           <h2 className="text-2xl font-bold text-tema-titulos">Gestión de Pacientes</h2>
           <p className="text-tema-texto text-sm mt-1">Administra la información de contacto de tus pacientes.</p>
         </div>
-        <button 
+        <button
           onClick={handleOpenNew}
           className="bg-tema-acento text-white px-4 py-2 rounded-lg font-medium hover:opacity-90 transition-opacity shadow-sm"
         >
@@ -160,7 +167,11 @@ export const PatientsManager = () => {
                 <tr><td colSpan={5} className="p-8 text-center italic">No hay pacientes registrados.</td></tr>
               ) : (
                 patients.map((patient) => (
-                  <tr key={patient.id} className="hover:bg-tema-codigo transition-colors">
+                  <tr
+                    key={patient.id}
+                    className="hover:bg-tema-codigo transition-colors"
+                    onClick={() => openDetailsPacient(patient.id!)}
+                  >
                     <td className="p-4 font-medium text-tema-titulos">{patient.name}</td>
                     <td className="p-4 text-sm">{patient.phone || '-'}</td>
                     <td className="p-4 text-sm">{patient.date_of_birth || '-'}</td>
@@ -172,14 +183,14 @@ export const PatientsManager = () => {
                     <td className="p-4 text-sm">{(patient.bail_amount / 100).toFixed(2)}</td>
                     <td className="p-4 text-sm">{patient.is_couple == true ? "SI" : "NO"}</td>
                     <td className="p-4 flex justify-center gap-2">
-                      <button 
+                      <button
                         onClick={() => handleOpenEdit(patient)}
                         className="p-1.5 text-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
                         title="Editar"
                       >
                         ✏️
                       </button>
-                      <button 
+                      <button
                         onClick={() => handleDelete(patient.id!)}
                         className="p-1.5 text-red-500 hover:bg-red-50 hover:text-red-700 rounded transition-colors"
                         title="Eliminar"
@@ -199,7 +210,7 @@ export const PatientsManager = () => {
       {isModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-opacity">
           <div className="bg-tema-fondo border border-tema-borde rounded-xl shadow-2xl w-full max-w-md overflow-hidden flex flex-col">
-            
+
             <div className="p-5 border-b border-tema-borde flex justify-between items-center">
               <h3 className="text-lg font-bold text-tema-titulos">
                 {editingId ? 'Editar Paciente' : 'Nuevo Paciente'}
@@ -212,11 +223,11 @@ export const PatientsManager = () => {
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div>
                 <label className="block text-sm font-semibold text-tema-titulos mb-1">Nombre Completo *</label>
-                <input 
-                  type="text" 
+                <input
+                  type="text"
                   required
                   value={formData.name}
-                  onChange={(e) => setFormData({...formData, name: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                   className="w-full p-2.5 bg-tema-codigo border border-tema-borde rounded text-tema-texto focus:ring-2 focus:ring-tema-acento outline-none transition-all"
                   placeholder="Ej. Juan Pérez"
                 />
@@ -225,30 +236,30 @@ export const PatientsManager = () => {
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-semibold text-tema-titulos mb-1">Teléfono</label>
-                  <input 
-                    type="tel" 
+                  <input
+                    type="tel"
                     value={formData.phone}
-                    onChange={(e) => setFormData({...formData, phone: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
                     className="w-full p-2.5 bg-tema-codigo border border-tema-borde rounded text-tema-texto focus:ring-2 focus:ring-tema-acento outline-none transition-all"
                     placeholder="Ej. 600 123 456"
                   />
                 </div>
                 <div>
                   <label className="block text-sm font-semibold text-tema-titulos mb-1">F. Nacimiento</label>
-                  <input 
-                    type="date" 
+                  <input
+                    type="date"
                     value={formData.date_of_birth}
-                    onChange={(e) => setFormData({...formData, date_of_birth: e.target.value})}
+                    onChange={(e) => setFormData({ ...formData, date_of_birth: e.target.value })}
                     className="w-full p-2.5 bg-tema-codigo border border-tema-borde rounded text-tema-texto focus:ring-2 focus:ring-tema-acento outline-none transition-all"
                   />
                 </div>
               </div>
-              
+
               <div>
                 <label className="block text-sm font-semibold text-tema-titulos mb-1">Centro Habitual (Opcional)</label>
-                <select 
+                <select
                   value={formData.default_location_id}
-                  onChange={(e) => setFormData({...formData, default_location_id: e.target.value})}
+                  onChange={(e) => setFormData({ ...formData, default_location_id: e.target.value })}
                   className="w-full p-2.5 bg-tema-codigo border border-tema-borde rounded text-tema-texto focus:ring-2 focus:ring-tema-acento outline-none transition-all"
                 >
                   <option value="">-- Sin asignar --</option>
@@ -263,21 +274,21 @@ export const PatientsManager = () => {
               <div>
                 <label className="block text-sm font-semibold text-tema-titulos mb-1">Fianza (Opcional)</label>
                 <input
-                        type="number"
-                        step="0.01"
-                        value={formData.bail_amount}
-                        onChange={(e) => setFormData({ ...formData, bail_amount: e.target.value })}
-                        className="w-full p-2 bg-tema-codigo border border-tema-borde rounded text-tema-texto"
-                        placeholder="0.00"
-                    />
+                  type="number"
+                  step="0.01"
+                  value={formData.bail_amount}
+                  onChange={(e) => setFormData({ ...formData, bail_amount: e.target.value })}
+                  className="w-full p-2 bg-tema-codigo border border-tema-borde rounded text-tema-texto"
+                  placeholder="0.00"
+                />
               </div>
 
               <div className="flex items-center gap-2 pt-2">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   id="is_couple"
                   checked={formData.is_couple || false}
-                  onChange={(e) => setFormData({...formData, is_couple: e.target.checked})}
+                  onChange={(e) => setFormData({ ...formData, is_couple: e.target.checked })}
                   className="w-4 h-4 text-tema-acento bg-tema-codigo border-tema-borde rounded focus:ring-2 focus:ring-tema-acento cursor-pointer"
                 />
                 <label htmlFor="is_couple" className="text-sm font-semibold text-tema-titulos cursor-pointer select-none">
@@ -286,15 +297,15 @@ export const PatientsManager = () => {
               </div>
 
               <div className="pt-4 flex justify-end gap-3">
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={() => setIsModalOpen(false)}
                   className="px-4 py-2 rounded font-medium text-tema-texto hover:bg-tema-codigo transition-colors border border-transparent"
                 >
                   Cancelar
                 </button>
-                <button 
-                  type="submit" 
+                <button
+                  type="submit"
                   className="px-4 py-2 rounded font-medium bg-tema-acento text-white hover:opacity-90 transition-opacity"
                 >
                   {editingId ? 'Guardar Cambios' : 'Crear Paciente'}

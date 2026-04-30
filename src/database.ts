@@ -73,6 +73,12 @@ const SCHEMA = `
     first_appointment_amount INTEGER DEFAULT 0,
     FOREIGN KEY (location_id) REFERENCES locations (id) ON DELETE SET NULL
   );
+  
+  CREATE TABLE IF NOT EXISTS synchronization_google_drive (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    last_update TEXT NOT NULL,
+    number_of_changes INTEGER DEFAULT 0,
+  );
 `;
 
 export const initializeDatabase = async (): Promise<SQLiteDBConnection> => {

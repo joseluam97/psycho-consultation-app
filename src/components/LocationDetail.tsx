@@ -2,15 +2,18 @@ import { useState, useEffect } from 'react';
 import { locationService } from '../services/locationService';
 import { patientService } from '../services/patientService';
 import { appointmentService } from '../services/appointmentService';
-import { AppointmentManager } from './AppointmentManager'; 
+import { AppointmentManager } from './AppointmentManager';
 import { AppointmentForm } from './AppointmentForm';
 import type { Location, Patient, Appointment } from '../types.ts';
+import { useNavigate, useParams } from 'react-router-dom';
+import { formatDateForSQLite } from '../utils/formatDate.ts';
 
-interface LocationDetailProps {
-  locationId: number;
-}
 
-export const LocationDetail = ({ locationId }: LocationDetailProps) => {
+export const LocationDetail = () => {
+  const navigate = useNavigate();
+
+  const { idLocation } = useParams<{ idLocation: string }>();
+
   const [location, setLocation] = useState<Location | null>(null);
   const [showNewAppointmentModal, setShowNewAppointmentModal] = useState(false);
 
@@ -22,17 +25,19 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
   const [loadingAppointments, setLoadingAppointments] = useState(false);
 
   const [selectedAppointmentId, setSelectedAppointmentId] = useState<number | null>(null);
-  const [refreshTrigger, setRefreshTrigger] = useState(0); 
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   useEffect(() => {
     const loadInfo = async () => {
-      const loc = await locationService.getLocationById(locationId);
-      const pats = await patientService.getPatientsByLocation(locationId);
-      setLocation(loc);
-      setPatients(pats);
+      if (idLocation && !isNaN(Number(idLocation))) {
+        const loc = await locationService.getLocationById(Number(idLocation));
+        const pats = await patientService.getPatientsByLocation(Number(idLocation));
+        setLocation(loc);
+        setPatients(pats);
+      }
     };
     loadInfo();
-  }, [locationId]);
+  }, [idLocation]);
 
   useEffect(() => {
     const loadAppointmentsForDate = async () => {
@@ -44,11 +49,11 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
         end.setHours(23, 59, 59, 999);
 
         const allDayAppointments = await appointmentService.getAppointmentsByDateRange(
-          start.toISOString(), 
-          end.toISOString()
+          formatDateForSQLite(start),
+          formatDateForSQLite(end)
         );
-        const locationAppointments = allDayAppointments.filter(a => a.location_id === locationId);
-        
+        const locationAppointments = allDayAppointments.filter(a => a.location_id === Number(idLocation));
+
         setAppointments(locationAppointments);
       } catch (error) {
         console.error("Error cargando citas:", error);
@@ -57,14 +62,18 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
       }
     };
 
-    if (locationId) {
+    if (Number(idLocation)) {
       loadAppointmentsForDate();
     }
-  }, [selectedDate, locationId, showNewAppointmentModal, refreshTrigger]); 
+  }, [selectedDate, idLocation, showNewAppointmentModal, refreshTrigger]);
 
-  const filteredPatients = patients.filter(p => 
+  const filteredPatients = patients.filter(p =>
     p.name.toLowerCase().includes(patientSearch.toLowerCase())
   );
+
+  const openDetailsPacient = (patientId: number) => {
+    navigate(`/patient/${patientId}`);
+  };
 
   const handlePrevDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() - 1); setSelectedDate(d); };
   const handleNextDay = () => { const d = new Date(selectedDate); d.setDate(d.getDate() + 1); setSelectedDate(d); };
@@ -74,15 +83,15 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
 
   return (
     <div className="max-w-7xl mx-auto space-y-6">
-      
+
       {/* Cabecera del Centro */}
-      <div className="bg-tema-fondo p-8 rounded-2xl border border-tema-borde shadow-sm flex justify-between items-center">
+      <div className="bg-tema-fondo p-4 rounded-2xl border border-tema-borde shadow-sm flex justify-between items-center">
         <div>
           <span className="text-tema-acento font-bold text-xs uppercase tracking-widest">Centro Médico</span>
           <h2 className="text-3xl font-bold text-tema-titulos mt-1">{location.name}</h2>
           <p className="text-tema-texto mt-1">📍 {location.address}, {location.city}</p>
         </div>
-        <button 
+        <button
           onClick={() => setShowNewAppointmentModal(true)}
           className="bg-tema-acento text-white px-6 py-3 rounded-xl font-bold shadow-sm hover:opacity-90 transition-opacity"
         >
@@ -91,14 +100,12 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6 items-start">
-        
-        {/* COLUMNA IZQUIERDA: Pacientes */}
-        {/* ... (Se mantiene igual) ... */}
+
         <div className="lg:col-span-1 bg-tema-fondo rounded-2xl border border-tema-borde shadow-sm flex flex-col h-[600px]">
           <div className="p-4 border-b border-tema-borde">
             <h3 className="font-bold text-tema-titulos mb-3">Pacientes ({filteredPatients.length})</h3>
-            <input 
-              type="text" 
+            <input
+              type="text"
               placeholder="Buscar paciente..."
               value={patientSearch}
               onChange={(e) => setPatientSearch(e.target.value)}
@@ -110,7 +117,11 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
               <p className="text-center text-sm text-tema-texto mt-4 italic">No hay resultados.</p>
             ) : (
               filteredPatients.map(p => (
-                <div key={p.id} className="p-3 mb-2 bg-tema-codigo rounded-lg hover:border-tema-acento border border-transparent transition-colors cursor-pointer">
+                <div
+                  key={p.id}
+                  className="p-3 mb-2 bg-tema-codigo rounded-lg hover:border-tema-acento border border-transparent transition-colors cursor-pointer"
+                  onClick={() => openDetailsPacient(p.id!)}
+                >
                   <p className="font-semibold text-sm text-tema-titulos">{p.name}</p>
                   <p className="text-xs text-tema-texto">{p.phone || 'Sin teléfono'}</p>
                 </div>
@@ -121,7 +132,7 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
 
         {/* COLUMNA DERECHA: Citas */}
         <div className="lg:col-span-3 bg-tema-fondo rounded-2xl border border-tema-borde shadow-sm flex flex-col h-[600px]">
-          
+
           <div className="p-4 border-b border-tema-borde flex items-center justify-between bg-tema-codigo/50 rounded-t-2xl">
             <h3 className="font-bold text-tema-titulos">Agenda Diaria</h3>
             <div className="flex items-center gap-2">
@@ -147,8 +158,8 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
                 {appointments.map(apt => {
                   const time = new Date(apt.appointment_datetime).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
                   return (
-                    <div 
-                      key={apt.id} 
+                    <div
+                      key={apt.id}
                       onClick={() => setSelectedAppointmentId(apt.id!)}
                       className="flex items-center p-4 bg-tema-fondo border border-tema-borde shadow-sm rounded-xl hover:border-tema-acento cursor-pointer transition-all hover:shadow-md"
                     >
@@ -185,9 +196,9 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
               <h3 className="text-xl font-bold text-tema-titulos">Agendar en {location.name}</h3>
               <button onClick={() => setShowNewAppointmentModal(false)} className="text-tema-texto hover:text-red-500 font-bold text-xl leading-none">&times;</button>
             </div>
-            
-            <AppointmentForm 
-              fixedLocationId={location.id} 
+
+            <AppointmentForm
+              fixedLocationId={Number(idLocation)}
               patientsList={patients}
               onSuccess={() => { setShowNewAppointmentModal(false); }}
               onCancel={() => setShowNewAppointmentModal(false)}
@@ -200,7 +211,7 @@ export const LocationDetail = ({ locationId }: LocationDetailProps) => {
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
           {/* Usamos max-w-3xl y un alto fijo para que parezca una ventana de gestión profunda */}
           <div className="bg-tema-fondo border border-tema-borde rounded-2xl shadow-2xl w-full max-w-3xl h-[80vh] overflow-hidden flex flex-col">
-            <AppointmentManager 
+            <AppointmentManager
               appointmentId={selectedAppointmentId}
               onActionComplete={() => setRefreshTrigger(prev => prev + 1)} // Forzamos recarga de la tabla trasera
               onClose={() => setSelectedAppointmentId(null)}
