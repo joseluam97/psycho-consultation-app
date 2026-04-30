@@ -170,7 +170,6 @@ export const PatientsManager = () => {
                   <tr
                     key={patient.id}
                     className="hover:bg-tema-codigo transition-colors"
-                    onClick={() => openDetailsPacient(patient.id!)}
                   >
                     <td className="p-4 font-medium text-tema-titulos">{patient.name}</td>
                     <td className="p-4 text-sm">{patient.phone || '-'}</td>
@@ -183,6 +182,13 @@ export const PatientsManager = () => {
                     <td className="p-4 text-sm">{(patient.bail_amount / 100).toFixed(2)}</td>
                     <td className="p-4 text-sm">{patient.is_couple == true ? "SI" : "NO"}</td>
                     <td className="p-4 flex justify-center gap-2">
+                      <button
+                        onClick={() => openDetailsPacient(patient.id!)}
+                        className="p-1.5 text-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"
+                        title="Detalles"
+                      >
+                        👥
+                      </button>
                       <button
                         onClick={() => handleOpenEdit(patient)}
                         className="p-1.5 text-blue-500 hover:bg-blue-50 hover:text-blue-700 rounded transition-colors"

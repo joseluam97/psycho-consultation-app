@@ -2,6 +2,7 @@ import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import { DB_NAME } from '../constant.ts';
 import type { DefaultPriceByLocation } from '../types.ts';
+import { syncService } from './syncService.ts';
 
 const getDb = async () => {
   return await sqlite.retrieveConnection(DB_NAME, false);
@@ -31,6 +32,7 @@ export const defaultPriceLocationService = {
     `;
     const result = await db.run(sql, [location_id, type_sesion, amount, first_appointment_amount]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -44,6 +46,7 @@ export const defaultPriceLocationService = {
     `;
     const result = await db.run(sql, [type_sesion, amount, first_appointment_amount, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 

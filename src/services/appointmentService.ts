@@ -2,6 +2,7 @@ import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import type { Appointment } from '../types.ts';
 import { DB_NAME } from '../constant.ts';
+import { syncService } from './syncService.ts';
 
 const getDb = async () => {
   return await sqlite.retrieveConnection(DB_NAME, false);
@@ -49,6 +50,7 @@ export const appointmentService = {
     ];
     const result = await db.run(sql, params);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -68,6 +70,7 @@ export const appointmentService = {
     ];
     const result = await db.run(sql, params);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -76,6 +79,7 @@ export const appointmentService = {
     const db = await getDb();
     const result = await db.run(`UPDATE appointments SET is_active = 0 WHERE id = ?;`, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -84,6 +88,7 @@ export const appointmentService = {
     const db = await getDb();
     const sql = `SELECT * FROM appointments WHERE patient_id = ? AND is_active = 1 ORDER BY appointment_datetime DESC;`;
     const result = await db.query(sql, [patientId]);
+    syncService.incrementChanges();
     return result.values as Appointment[];
   },
 
@@ -126,6 +131,7 @@ export const appointmentService = {
     const db = await getDb();
     const result = await db.run(`UPDATE appointments SET is_cancelled = ? WHERE id = ?;`, [status ? 1 : 0, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -134,6 +140,7 @@ export const appointmentService = {
     const db = await getDb();
     const result = await db.run(`UPDATE appointments SET is_finished = ? WHERE id = ?;`, [status ? 1 : 0, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -142,6 +149,7 @@ export const appointmentService = {
     const db = await getDb();
     const result = await db.run(`UPDATE appointments SET appointment_datetime = ? WHERE id = ?;`, [newDateTime, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -150,6 +158,7 @@ export const appointmentService = {
     const db = await getDb();
     const result = await db.run(`UPDATE appointments SET payment_method_id = ? WHERE id = ?;`, [paymentMethodId, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -163,6 +172,7 @@ export const appointmentService = {
     `;
     const result = await db.run(sql, [paymentMethodId, returnAmount, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 

@@ -77,7 +77,7 @@ const SCHEMA = `
   CREATE TABLE IF NOT EXISTS synchronization_google_drive (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     last_update TEXT NOT NULL,
-    number_of_changes INTEGER DEFAULT 0,
+    number_of_changes INTEGER DEFAULT 0
   );
 `;
 

@@ -2,6 +2,7 @@ import { DB_NAME } from '../constant.ts';
 import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import type { Patient } from '../types.ts';
+import { syncService } from './syncService.ts';
 
 // Helper para obtener la base de datos abierta
 const getDb = async () => {
@@ -26,6 +27,7 @@ export const patientService = {
     const params = [name, dob || null, phone || null, locationId || null, is_couple || null, bail_amount || null];
     const result = await db.run(sql, params);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -39,6 +41,7 @@ export const patientService = {
     `;
     const result = await db.run(sql, [patient.name, patient.date_of_birth, patient.phone, patient.is_couple == true ? 1 : 0, patient.bail_amount, patient.id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -48,6 +51,7 @@ export const patientService = {
     const sql = `UPDATE patients SET is_active = 0 WHERE id = ?;`;
     const result = await db.run(sql, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -57,6 +61,7 @@ export const patientService = {
     const sql = `UPDATE patients SET default_location_id = ? WHERE id = ?;`;
     const result = await db.run(sql, [locationId, patientId]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 

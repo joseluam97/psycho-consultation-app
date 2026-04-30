@@ -84,6 +84,7 @@ export const Sidebar = ({ isOpen, setIsOpen, locations, currentPath, navigate }:
           <a onClick={() => navigate('/billing')} className={navItemClass('/billing')}>💶 Facturación</a>
           <a onClick={() => navigate('/payment_methods')} className={navItemClass('/payment_methods')}>💳 Métodos de Pago</a>
           <a onClick={() => navigate('/locations')} className={navItemClass('/locations')}>📍 Localizaciones</a>
+          <a onClick={() => navigate('/settings')} className={navItemClass('/settings')}>⚙️ Configuración</a>
         </nav>
       </aside>
     </>

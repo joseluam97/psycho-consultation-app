@@ -2,6 +2,7 @@ import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import { DB_NAME } from '../constant.ts';
 import type { Location } from '../types.ts';
+import { syncService } from './syncService.ts';
 
 const getDb = async () => {
   return await sqlite.retrieveConnection(DB_NAME, false);
@@ -32,6 +33,7 @@ export const locationService = {
     const params = [name, address || null, city || null, zipCode || null, percentage_deducted || null];
     const result = await db.run(sql, params);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -53,6 +55,7 @@ export const locationService = {
     ];
     const result = await db.run(sql, params);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -63,6 +66,7 @@ export const locationService = {
     const sql = `UPDATE locations SET is_active = 0 WHERE id = ?;`;
     const result = await db.run(sql, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 

@@ -2,6 +2,7 @@ import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import { DB_NAME } from '../constant.ts';
 import type { Note } from '../types.ts';
+import { syncService } from './syncService.ts';
 
 const getDb = async () => {
   return await sqlite.retrieveConnection(DB_NAME, false);
@@ -32,6 +33,7 @@ export const noteService = {
     `;
     const result = await db.run(sql, [patientId, appointmentId, content, now]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -41,6 +43,7 @@ export const noteService = {
     const sql = `UPDATE notes SET content = ? WHERE id = ?;`;
     const result = await db.run(sql, [content, id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -50,6 +53,7 @@ export const noteService = {
     const sql = `UPDATE notes SET is_active = 0 WHERE id = ?;`;
     const result = await db.run(sql, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 

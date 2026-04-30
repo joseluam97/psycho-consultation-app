@@ -61,3 +61,9 @@ export interface DefaultPriceByLocation {
   amount: number;
   first_appointment_amount: number;
 }
+
+export interface SyncData {
+  id?: number;
+  last_update: string;
+  number_of_changes: number;
+}

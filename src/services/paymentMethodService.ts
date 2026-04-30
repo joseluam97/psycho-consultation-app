@@ -2,6 +2,7 @@ import { sqlite } from '../database.ts';
 import { Capacitor } from '@capacitor/core';
 import { DB_NAME } from '../constant';
 import type { PaymentMethod } from '../types.ts';
+import { syncService } from './syncService.ts';
 
 const getDb = async () => {
   return await sqlite.retrieveConnection(DB_NAME, false);
@@ -36,6 +37,7 @@ export const paymentMethodService = {
     const sql = `INSERT INTO payment_methods (name, is_active) VALUES (?, 1);`;
     const result = await db.run(sql, [name]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -45,6 +47,7 @@ export const paymentMethodService = {
     const sql = `UPDATE payment_methods SET name = ? WHERE id = ?;`;
     const result = await db.run(sql, [method.name, method.id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -54,6 +57,7 @@ export const paymentMethodService = {
     const sql = `UPDATE payment_methods SET is_active = 0 WHERE id = ?;`;
     const result = await db.run(sql, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   },
 
@@ -71,6 +75,7 @@ export const paymentMethodService = {
     const sql = `UPDATE payment_methods SET is_active = 1 WHERE id = ?;`;
     const result = await db.run(sql, [id]);
     await syncWeb();
+    syncService.incrementChanges();
     return result;
   }
 };
