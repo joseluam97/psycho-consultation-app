@@ -82,8 +82,10 @@ export const AppointmentForm = ({ fixedLocationId, patientsList, onSuccess, onCa
 
     useEffect(() => {
         const loadDefaultPrice = async () => {
-            if (formData.location_id && formData.patient_id) {
-                setDefaultPriceByLocation(Number(formData.location_id), Number(formData.patient_id));
+            if ((fixedLocationId || formData.location_id) && formData.patient_id) {
+                let indexed_location_id = fixedLocationId ? fixedLocationId : Number(formData.location_id);
+                setDefaultPriceByLocation(Number(indexed_location_id), Number(formData.patient_id));
+
             }
             else {
                 let final_price = 0;
@@ -95,7 +97,7 @@ export const AppointmentForm = ({ fixedLocationId, patientsList, onSuccess, onCa
 
         };
         loadDefaultPrice();
-    }, [formData.location_id, formData.patient_id]);
+    }, [formData.location_id, formData.patient_id, fixedLocationId]);
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
