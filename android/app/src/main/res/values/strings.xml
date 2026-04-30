@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">PiscoApp</string>
+    <string name="title_activity_main">PiscoApp</string>
+    <string name="package_name">com.app.apppsico</string>
+    <string name="custom_url_scheme">com.app.apppsico</string>
+</resources>

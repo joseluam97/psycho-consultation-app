@@ -1,0 +1,1 @@
+export const DB_NAME = 'psico_clinic_db';
