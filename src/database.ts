@@ -30,6 +30,7 @@ const SCHEMA = `
     date_of_birth TEXT, -- ISO8601 YYYY-MM-DD
     phone TEXT,
     default_location_id INTEGER,
+    bail_amount INTEGER DEFAULT 0,
     is_active INTEGER DEFAULT 1,
     is_couple INTEGER DEFAULT 0,
     FOREIGN KEY (default_location_id) REFERENCES locations (id) ON DELETE SET NULL
@@ -41,6 +42,7 @@ const SCHEMA = `
     location_id INTEGER,
     appointment_datetime TEXT NOT NULL, -- ISO8601
     amount INTEGER DEFAULT 0,
+    return_amount INTEGER DEFAULT 0,
     payment_method_id INTEGER,
     is_first_appointment INTEGER DEFAULT 0,
     is_cancelled INTEGER DEFAULT 0,

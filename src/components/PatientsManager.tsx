@@ -16,6 +16,7 @@ export const PatientsManager = () => {
     phone: '',
     date_of_birth: '',
     default_location_id: '',
+    bail_amount: '',
     is_couple: false
   });
 
@@ -51,7 +52,7 @@ export const PatientsManager = () => {
   // Abrir modal para NUEVO
   const handleOpenNew = () => {
     setEditingId(null);
-    setFormData({ name: '', phone: '', date_of_birth: '', default_location_id: '', is_couple: false });
+    setFormData({ name: '', phone: '', date_of_birth: '', default_location_id: '', bail_amount: '', is_couple: false });
     setIsModalOpen(true);
   };
 
@@ -63,6 +64,7 @@ export const PatientsManager = () => {
       phone: patient.phone || '',
       date_of_birth: patient.date_of_birth ? patient.date_of_birth.split('T')[0] : '', // Formato YYYY-MM-DD para el input type="date"
       default_location_id: patient.default_location_id ? patient.default_location_id.toString() : '',
+      bail_amount: patient.bail_amount ? (patient.bail_amount / 100).toFixed(2) : '',
       is_couple: patient.is_couple
     });
     setIsModalOpen(true);
@@ -84,7 +86,8 @@ export const PatientsManager = () => {
           phone: formData.phone,
           date_of_birth: formData.date_of_birth,
           is_active: 1,
-          is_couple: formData.is_couple
+          is_couple: formData.is_couple,
+          bail_amount: formData.bail_amount ? Math.round(parseFloat(formData.bail_amount) * 100) : 0
         });
         // Actualizar ubicación por defecto (lo teníamos como un método separado en el servicio)
         await patientService.updateDefaultLocation(editingId, locId || null);
@@ -95,7 +98,8 @@ export const PatientsManager = () => {
           formData.date_of_birth,
           formData.phone,
           locId,
-          formData.is_couple == true ? 1 : 0
+          formData.is_couple == true ? 1 : 0,
+          formData.bail_amount ? Math.round(parseFloat(formData.bail_amount) * 100) : 0
         );
       }
       setIsModalOpen(false);
@@ -144,6 +148,7 @@ export const PatientsManager = () => {
                 <th className="p-4 font-semibold">Teléfono</th>
                 <th className="p-4 font-semibold">F. Nacimiento</th>
                 <th className="p-4 font-semibold">Centro Habitual</th>
+                <th className="p-4 font-semibold">Fianza</th>
                 <th className="p-4 font-semibold">Es pareja</th>
                 <th className="p-4 font-semibold text-center w-32">Acciones</th>
               </tr>
@@ -164,6 +169,7 @@ export const PatientsManager = () => {
                         {getLocationName(patient.default_location_id)}
                       </span>
                     </td>
+                    <td className="p-4 text-sm">{(patient.bail_amount / 100).toFixed(2)}</td>
                     <td className="p-4 text-sm">{patient.is_couple == true ? "SI" : "NO"}</td>
                     <td className="p-4 flex justify-center gap-2">
                       <button 
@@ -252,6 +258,18 @@ export const PatientsManager = () => {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-tema-titulos mb-1">Fianza (Opcional)</label>
+                <input
+                        type="number"
+                        step="0.01"
+                        value={formData.bail_amount}
+                        onChange={(e) => setFormData({ ...formData, bail_amount: e.target.value })}
+                        className="w-full p-2 bg-tema-codigo border border-tema-borde rounded text-tema-texto"
+                        placeholder="0.00"
+                    />
               </div>
 
               <div className="flex items-center gap-2 pt-2">

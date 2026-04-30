@@ -13,6 +13,7 @@ import { LocationDetail } from './components/LocationDetail.tsx';
 import { CalendarView } from './components/CalendarView.tsx';
 import { driveService } from './services/driveService.ts';
 import { AppointmentManager } from './components/AppointmentManager.tsx';
+import { BillingView } from './components/BillingView.tsx';
 
 // Helper para obtener el inicio y fin del día actual en formato ISO
 const getTodayRange = () => {
@@ -271,6 +272,7 @@ function App() {
           {currentView === 'calendar' && <CalendarView />}
           {currentView === 'locations' && <LocationsManager />}
           {currentView === 'payment_methods' && <PaymentMethodsManager />}
+          {currentView === 'billing' && <BillingView />}
 
           {/* Lógica para Centros Individuales */}
           {currentView.startsWith('loc_') && (

@@ -6,6 +6,7 @@ export interface Patient {
   default_location_id?: number;
   is_active: number;
   is_couple: boolean;
+  bail_amount: number;
 }
 
 export interface Appointment {
@@ -14,6 +15,7 @@ export interface Appointment {
   location_id?: number | null;
   appointment_datetime: string; // ISO8601
   amount: number; // En céntimos
+  return_amount: number; // En céntimos
   payment_method_id?: number | null;
   is_first_appointment: number;
   is_cancelled: number;

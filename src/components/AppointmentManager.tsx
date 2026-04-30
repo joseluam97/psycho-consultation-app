@@ -16,11 +16,14 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
     const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
     const [loading, setLoading] = useState(true);
     const [isSaving, setIsSaving] = useState(false);
+    
+    // Nuevo estado para el monto de devolución (se maneja como string para el input, se convierte a number al guardar)
+    const [returnAmount, setReturnAmount] = useState<string>('0'); 
 
     // ESTADOS BORRADOR
     const [draftStatus, setDraftStatus] = useState<'pending' | 'finished' | 'cancelled'>('pending');
     const [draftPaymentId, setDraftPaymentId] = useState<string>('');
-    const [draftDatetime, setDraftDatetime] = useState<string>(''); // Nuevo: Para editar la fecha
+    const [draftDatetime, setDraftDatetime] = useState<string>(''); // Para editar la fecha
 
     // Notas
     const [currentNoteText, setCurrentNoteText] = useState('');
@@ -47,6 +50,13 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
             setDraftStatus(apt?.is_finished ? 'finished' : apt?.is_cancelled ? 'cancelled' : 'pending');
             setDraftPaymentId(apt?.payment_method_id ? apt?.payment_method_id.toString() : '');
 
+            // Convertimos los céntimos de la DB a euros para mostrarlos en el input
+            if (apt && apt.return_amount) {
+                setReturnAmount((apt.return_amount / 100).toString());
+            } else {
+                setReturnAmount('0');
+            }
+
             // Convertir fecha de SQLite a formato para el input datetime-local (YYYY-MM-DDThh:mm)
             const dateForInput = new Date(apt?.appointment_datetime || "").toISOString().slice(0, 16);
             setDraftDatetime(dateForInput);
@@ -71,8 +81,6 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
 
         try {
             // 1. Guardar Estado de la cita
-            // Nota: Si en tu servicio tienes un método genérico 'updateAppointment', úsalo. 
-            // Aquí usamos los específicos que creaste.
             if (draftStatus === 'finished') {
                 await appointmentService.markAsCancelled(appointmentId, false);
                 await appointmentService.markAsFinished(appointmentId, true);
@@ -93,16 +101,16 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
 
             // 2. Si está pendiente, guardar la nueva fecha/hora si ha cambiado
             if (draftStatus === 'pending' && draftDatetime !== new Date(appointment.appointment_datetime).toISOString().slice(0, 16)) {
-                // Asumiendo que tienes un método updateAppointment o similar
                 await appointmentService.updateDateTime(appointmentId, draftDatetime);
             }
 
-            // 3. Si está finalizada, guardar Método de Pago
+            // 3. Si está finalizada, guardar Método de Pago Y Monto de Devolución
             if (draftStatus === 'finished') {
                 const pId = draftPaymentId ? Number(draftPaymentId) : null;
-                if (pId !== appointment.payment_method_id) {
-                    await appointmentService.updatePaymentMethod(appointmentId, pId);
-                }
+                const parsedReturnAmount = Math.round(parseFloat(returnAmount || '0') * 100); // Pasamos de Euros a céntimos
+                
+                // Actualizamos ambos campos a la vez con el nuevo método
+                await appointmentService.updatePaymentDetails(appointmentId, pId, parsedReturnAmount);
             }
 
             // 4. Guardar Notas
@@ -128,9 +136,13 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
     };
 
     // Lógica para habilitar el botón de guardar
+    // Comprobamos si el returnAmount ha cambiado respecto al original
+    const initialReturnAmount = appointment?.return_amount ? (appointment.return_amount / 100).toString() : '0';
+    
     const hasChanges =
         draftStatus !== (appointment?.is_finished ? 'finished' : appointment?.is_cancelled ? 'cancelled' : 'pending') ||
         (draftStatus === 'finished' && draftPaymentId !== (appointment?.payment_method_id ? appointment.payment_method_id.toString() : '')) ||
+        (draftStatus === 'finished' && returnAmount !== initialReturnAmount) || // <-- Añadido al detector de cambios
         (draftStatus === 'pending' && draftDatetime !== (appointment ? new Date(appointment.appointment_datetime).toISOString().slice(0, 16) : '')) ||
         draftNotes.length > 0;
 
@@ -143,7 +155,6 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
             <div className="p-6 border-b border-tema-borde flex justify-between items-start">
                 <div>
                     <h3 className="text-xl font-bold text-tema-titulos">{appointment.patient_name}</h3>
-                    {/* Mostramos la fecha actual de la base de datos como referencia */}
                     <p className="text-sm opacity-70">
                         {new Date(appointment.appointment_datetime).toLocaleString('es-ES', {
                             weekday: 'long', day: 'numeric', month: 'long', hour: '2-digit', minute: '2-digit'
@@ -188,22 +199,46 @@ export const AppointmentManager = ({ appointmentId, onActionComplete, onClose }:
 
                 {/* PANEL: SOLO EN ESTADO FINALIZAR */}
                 {draftStatus === 'finished' && (
-                    <section className="bg-tema-codigo p-4 rounded-xl border border-tema-borde animate-fade-in">
+                    <section className="bg-tema-codigo p-4 rounded-xl border border-tema-borde animate-fade-in space-y-4">
                         <h4 className="text-xs font-bold uppercase tracking-widest text-tema-titulos opacity-60 mb-3">Datos de Cobro</h4>
-                        <div className="flex items-center justify-between gap-4">
-                            <div className="text-2xl font-bold text-tema-titulos">
-                                {(appointment.amount / 100).toFixed(2)} €
+                        
+                        <div className="flex flex-col gap-4">
+                            {/* Fila 1: Total y Método de Pago */}
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex flex-col">
+                                    <span className="text-xs text-tema-texto opacity-70">Total a cobrar</span>
+                                    <span className="text-2xl font-bold text-tema-titulos">
+                                        {(appointment.amount / 100).toFixed(2)} €
+                                    </span>
+                                </div>
+                                <select
+                                    value={draftPaymentId}
+                                    onChange={(e) => setDraftPaymentId(e.target.value)}
+                                    className="bg-tema-fondo border border-tema-borde p-3 rounded text-sm min-w-[200px] outline-none focus:border-tema-acento"
+                                >
+                                    <option value="">Seleccionar método...</option>
+                                    {paymentMethods.map(m => (
+                                        <option key={m.id} value={m.id}>{m.name}</option>
+                                    ))}
+                                </select>
                             </div>
-                            <select
-                                value={draftPaymentId}
-                                onChange={(e) => setDraftPaymentId(e.target.value)}
-                                className="bg-tema-fondo border border-tema-borde p-3 rounded text-sm min-w-[200px] outline-none focus:border-tema-acento"
-                            >
-                                <option value="">Seleccionar método...</option>
-                                {paymentMethods.map(m => (
-                                    <option key={m.id} value={m.id}>{m.name}</option>
-                                ))}
-                            </select>
+
+                            {/* Fila 2: Cambio devuelto (Sólo tiene sentido si no es transferencia/tarjeta, pero lo dejamos abierto por si acaso) */}
+                            <div className="flex flex-col bg-tema-fondo p-3 rounded border border-tema-borde/50">
+                                <label className="text-xs font-bold text-tema-texto mb-1">Cambio a devolver (€)</label>
+                                <div className="flex items-center gap-2">
+                                    <span className="text-gray-400 font-bold">€</span>
+                                    <input
+                                        type="number"
+                                        min="0"
+                                        step="0.01"
+                                        placeholder="0.00"
+                                        value={returnAmount}
+                                        onChange={(e) => setReturnAmount(e.target.value)}
+                                        className="w-full bg-transparent border-none outline-none text-tema-texto font-bold"
+                                    />
+                                </div>
+                            </div>
                         </div>
                     </section>
                 )}

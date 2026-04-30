@@ -98,33 +98,83 @@ export const analyticsService = {
     return result.values || [];
   },
 
-  // 10. Tasa de Retención (Pacientes que han tenido más de una cita en un rango)
-  async getRecurrentPatientsCount(startDate: string, endDate: string) {
-    const db = await getDb();
-    const sql = `
-      SELECT COUNT(*) as recurrent_count FROM (
-        SELECT patient_id 
-        FROM appointments 
-        WHERE is_active = 1 AND is_finished = 1
-        AND appointment_datetime BETWEEN ? AND ?
-        GROUP BY patient_id
-        HAVING COUNT(id) > 1
-      )
-    `;
-    const result = await db.query(sql, [startDate, endDate]);
-    return result.values?.[0]?.recurrent_count || 0;
-  },
-
   // 11. Ingreso medio por sesión (Ticket medio)
-  async getAverageIncomePerSession(startDate: string, endDate: string) {
+  async getAverageIncomePerSession(startDate: string, endDate: string, locationId?: number) {
     const db = await getDb();
-    const sql = `
+    let sql = `
       SELECT AVG(amount) / 100.0 as average
       FROM appointments 
       WHERE is_finished = 1 AND is_active = 1
       AND appointment_datetime BETWEEN ? AND ?
     `;
-    const result = await db.query(sql, [startDate, endDate]);
+    const params: any[] = [startDate, endDate];
+    if (locationId) { sql += ` AND location_id = ?`; params.push(locationId); }
+    const result = await db.query(sql, params);
     return result.values?.[0]?.average || 0;
+  },
+
+  // 12. Número de pacientes únicos que han tenido sesión en un rango
+  async getUniquePatientsCount(startDate: string, endDate: string, locationId?: number) {
+    const db = await getDb();
+    let sql = `
+      SELECT COUNT(DISTINCT patient_id) as count 
+      FROM appointments 
+      WHERE is_finished = 1 AND is_active = 1 
+      AND appointment_datetime BETWEEN ? AND ?
+    `;
+    const params: any[] = [startDate, endDate];
+    if (locationId) { sql += ` AND location_id = ?`; params.push(locationId); }
+    const result = await db.query(sql, params);
+    return result.values?.[0]?.count || 0;
+  },
+
+  // 13. Ingresos desglosados por ubicación (necesario para calcular el porcentaje a percibir)
+  async getRevenueByLocation(startDate: string, endDate: string) {
+    const db = await getDb();
+    // Esta consulta la dejamos igual porque siempre agrupa por todas las localizaciones,
+    // nosotros filtraremos el resultado en el Frontend según la pestaña seleccionada.
+    const sql = `
+      SELECT l.id, l.name, l.percentage_deducted, SUM(a.amount) as total_cents
+      FROM appointments a
+      JOIN locations l ON a.location_id = l.id
+      WHERE a.is_finished = 1 AND a.is_active = 1
+      AND a.appointment_datetime BETWEEN ? AND ?
+      GROUP BY l.id
+    `;
+    const result = await db.query(sql, [startDate, endDate]);
+    return result.values || [];
+  },
+
+  // 14. Número de citas borradas lógicamente (is_active = 0)
+  async getDeletedAppointmentsCount(startDate: string, endDate: string, locationId?: number) {
+    const db = await getDb();
+    let sql = `
+      SELECT COUNT(*) as count 
+      FROM appointments 
+      WHERE is_active = 0 
+      AND appointment_datetime BETWEEN ? AND ?
+    `;
+    const params: any[] = [startDate, endDate];
+    if (locationId) { sql += ` AND location_id = ?`; params.push(locationId); }
+    const result = await db.query(sql, params);
+    return result.values?.[0]?.count || 0;
+  },
+
+  // 15. Tasa de Retención
+  async getRecurrentPatientsCount(startDate: string, endDate: string, locationId?: number) {
+    const db = await getDb();
+    let sql = `
+      SELECT COUNT(*) as recurrent_count FROM (
+        SELECT patient_id 
+        FROM appointments 
+        WHERE is_active = 1 AND is_finished = 1
+        AND appointment_datetime BETWEEN ? AND ?
+    `;
+    const params: any[] = [startDate, endDate];
+    if (locationId) { sql += ` AND location_id = ?`; params.push(locationId); }
+    
+    sql += ` GROUP BY patient_id HAVING COUNT(id) > 1 )`;
+    const result = await db.query(sql, params);
+    return result.values?.[0]?.recurrent_count || 0;
   }
 };

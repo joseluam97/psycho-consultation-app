@@ -153,6 +153,19 @@ export const appointmentService = {
     return result;
   },
 
+  // 13. Actualizar detalles de pago (método de pago y cambio devuelto)
+  async updatePaymentDetails(id: number, paymentMethodId: number | null, returnAmount: number) {
+    const db = await getDb();
+    const sql = `
+      UPDATE appointments 
+      SET payment_method_id = ?, return_amount = ? 
+      WHERE id = ?;
+    `;
+    const result = await db.run(sql, [paymentMethodId, returnAmount, id]);
+    await syncWeb();
+    return result;
+  },
+
   // Obtener citas en un rango de fechas (con nombres de paciente)
   async getAppointmentsByDateRange(startDate: string, endDate: string) {
     const db = await getDb();

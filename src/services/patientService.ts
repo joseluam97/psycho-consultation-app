@@ -17,13 +17,13 @@ const syncWeb = async () => {
 
 export const patientService = {
   // 1. Crear Paciente
-  async createPatient(name: string, dob?: string, phone?: string, locationId?: number, is_couple?: number) {
+  async createPatient(name: string, dob?: string, phone?: string, locationId?: number, is_couple?: number, bail_amount?: number) {
     const db = await getDb();
     const sql = `
-      INSERT INTO patients (name, date_of_birth, phone, default_location_id, is_active, is_couple) 
-      VALUES (?, ?, ?, ?, 1, ?);
+      INSERT INTO patients (name, date_of_birth, phone, default_location_id, is_active, is_couple, bail_amount) 
+      VALUES (?, ?, ?, ?, 1, ?, ?);
     `;
-    const params = [name, dob || null, phone || null, locationId || null, is_couple || null];
+    const params = [name, dob || null, phone || null, locationId || null, is_couple || null, bail_amount || null];
     const result = await db.run(sql, params);
     await syncWeb();
     return result;
@@ -34,10 +34,10 @@ export const patientService = {
     const db = await getDb();
     const sql = `
       UPDATE patients 
-      SET name = ?, date_of_birth = ?, phone = ?, is_couple = ?
+      SET name = ?, date_of_birth = ?, phone = ?, is_couple = ?, bail_amount = ?
       WHERE id = ?;
     `;
-    const result = await db.run(sql, [patient.name, patient.date_of_birth, patient.phone, patient.is_couple == true ? 1 : 0, patient.id]);
+    const result = await db.run(sql, [patient.name, patient.date_of_birth, patient.phone, patient.is_couple == true ? 1 : 0, patient.bail_amount, patient.id]);
     await syncWeb();
     return result;
   },
