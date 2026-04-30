@@ -63,7 +63,7 @@ export const appointmentService = {
     `;
     const params = [
       appointment.location_id, appointment.appointment_datetime, appointment.amount,
-      appointment.payment_method_id, appointment.is_first_appointment, 
+      appointment.payment_method_id, appointment.is_first_appointment,
       appointment.is_couple_appointment, appointment.id
     ];
     const result = await db.run(sql, params);
@@ -167,5 +167,27 @@ export const appointmentService = {
     const result = await db.query(sql, [startDate, endDate]);
     return result.values as Appointment[];
   },
-  
+
+  // Obtener citas en un rango de fechas para ver si hay disponibilidad
+  async checkTimeSlotOverlap(startDate: string, endDate: string) {
+    const db = await getDb();
+
+    const sql = `
+      SELECT a.*, p.name as patient_name, l.name as location_name 
+      FROM appointments a
+      LEFT JOIN patients p ON a.patient_id = p.id
+      LEFT JOIN locations l ON a.location_id = l.id
+      WHERE a.is_active = 1 
+        -- 1. Reemplazamos la 'T' por espacio en la DB para igualar formatos
+        -- 2. Sumamos la hora al valor limpio
+        AND ? < datetime(replace(a.appointment_datetime, 'T', ' '), '+1 hour') 
+        -- 3. Comparamos el valor limpio contra tu endDate
+        AND replace(a.appointment_datetime, 'T', ' ') < ?
+      ORDER BY a.appointment_datetime ASC;
+    `;
+
+    const result = await db.query(sql, [startDate, endDate]);
+    return result.values as Appointment[];
+  }
+
 };

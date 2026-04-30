@@ -6,6 +6,7 @@ import { locationService } from '../services/locationService.ts';
 import DatePicker from 'react-datepicker';
 import 'react-datepicker/dist/react-datepicker.css';
 import { defaultPriceLocationService } from '../services/defaultPriceLocationService.ts';
+import { formatDateForSQLite } from '../utils/formatDate.ts';
 
 interface AppointmentFormProps {
     fixedLocationId?: number; // Si viene, el centro está bloqueado
@@ -100,6 +101,11 @@ export const AppointmentForm = ({ fixedLocationId, patientsList, onSuccess, onCa
         e.preventDefault();
         if (!formData.patient_id) return alert("Selecciona un paciente");
 
+        let result_check: boolean = await checkIfAvailableRangeTime(formData.appointment_datetime);
+        if (!result_check) {
+            return alert("La hora seleccionada no está disponible. Por favor, elige otro horario.");
+        }
+
         await appointmentService.createAppointment({
             patient_id: Number(formData.patient_id),
             location_id: fixedLocationId || Number(formData.location_id),
@@ -111,6 +117,24 @@ export const AppointmentForm = ({ fixedLocationId, patientsList, onSuccess, onCa
 
         onSuccess();
     };
+
+    const checkIfAvailableRangeTime = async (date_start_appointment: string) => {
+        // 1. Convertimos el string que te llega a un objeto Date
+        const startDate = new Date(date_start_appointment);
+
+        // 2. Clonamos la fecha y le sumamos 1 hora
+        const endDate = new Date(startDate);
+        endDate.setHours(endDate.getHours() + 1);
+
+        // 3. Formateamos las fechas al estándar de SQLite sin alterar la zona horaria local
+        const startStr = formatDateForSQLite(startDate);
+        const endStr = formatDateForSQLite(endDate);
+
+        // 4. Enviamos las fechas limpias a la consulta
+        const appointments = await appointmentService.checkTimeSlotOverlap(startStr, endStr);
+
+        return appointments.length === 0;
+    }
 
     const setDefaultPriceByLocation = async (location_id: number, patient_id: number) => {
         let patient = patients.find(p => p.id === patient_id);
